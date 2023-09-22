@@ -1,0 +1,26 @@
+---
+
+services:
+  app:
+    image: sber_task:local
+    container_name: sber
+    ports:
+      - "3003:3003"
+    depends_on:
+      - postgresql
+    networks:
+      - ps
+
+  postgresql:
+    image: postgres:14-alpine
+    container_name: sber-psql
+    environment:
+      - POSTGRES_DB=sber
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=GCvhFTduk1
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    networks:
+      - ps
+networks:
+  ps:

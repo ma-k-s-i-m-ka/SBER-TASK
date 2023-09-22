@@ -1,0 +1,220 @@
+definitions:
+  task.CreateTask:
+    properties:
+      date:
+        example: "2023-09-22T09:00:00Z"
+        type: string
+      description:
+        example: Описание новой задачи
+        type: string
+      status:
+        example: false
+        type: boolean
+      title:
+        example: Новая задача
+        type: string
+    type: object
+  task.PartiallyUpdateTask:
+    properties:
+      date:
+        example: Обновленная дата 2023-09-21T12:00:00Z
+        type: string
+      description:
+        example: Обновленное Описание задачи 1
+        type: string
+      id:
+        example: 1
+        type: integer
+      status:
+        example: false
+        type: boolean
+      title:
+        example: Обновленная Задача 1
+        type: string
+    type: object
+  task.Task:
+    properties:
+      date:
+        example: "2023-09-21T12:00:00Z"
+        type: string
+      description:
+        example: Описание задачи 1
+        type: string
+      id:
+        example: 1
+        type: integer
+      status:
+        example: false
+        type: boolean
+      title:
+        example: Задача 1
+        type: string
+    type: object
+host: localhost:3003
+info:
+  contact: {}
+  title: SberTask
+paths:
+  /task:
+    post:
+      consumes:
+      - application/json
+      description: Создает новую задачу
+      parameters:
+      - description: Данные для создания задачи
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/task.CreateTask'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/task.Task'
+      summary: Создать задачу
+  /task/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет задачу по заданному идентификатору
+      parameters:
+      - description: Идентификатор задачи
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Удалить задачу
+    get:
+      consumes:
+      - application/json
+      description: Получает задачу по заданному идентификатору
+      parameters:
+      - description: Идентификатор задачи
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/task.Task'
+      summary: Получить задачу по идентификатору
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет часть данных существующей задачи
+      parameters:
+      - description: Идентификатор задачи
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Часть данных для обновления задачи, строки могут быть пустыми
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/task.PartiallyUpdateTask'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/task.Task'
+      summary: Частичное обновление задачи
+    put:
+      consumes:
+      - application/json
+      description: Обновляет существующую задачу
+      parameters:
+      - description: Идентификатор задачи
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Данные для обновления задачи
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/task.Task'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/task.Task'
+      summary: Обновить задачу
+  /tasks:
+    get:
+      consumes:
+      - application/json
+      description: Получает список всех задач
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/task.Task'
+            type: array
+      summary: Получить все задачи
+  /tasks/date:
+    post:
+      consumes:
+      - application/json
+      description: Получает список всех доступных задач по заданной дате
+      parameters:
+      - description: Запрос на получение задач с определенной датой и статусом
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/task.Task'
+            type: array
+      summary: Получить все задачи по определенной дате
+  /tasks/status:
+    post:
+      consumes:
+      - application/json
+      description: Получает список всех задач с заданным статусом
+      parameters:
+      - description: Запрос на получение задач с определенным статусом
+        in: query
+        name: status
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/task.Task'
+            type: array
+      summary: Получить все задачи с определенным статусом
+swagger: "2.0"

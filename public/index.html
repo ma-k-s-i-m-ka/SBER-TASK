@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список задач</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .buttons-container {
+            margin-bottom: 20px;
+        }
+        .date-filter-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .date-input {
+            margin-right: 10px;
+        }
+        .button {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+<h1>Список задач</h1>
+<div class="buttons-container">
+    <button id="showAllButton" class="button">Показать все задачи</button>
+    <button id="showCompletedButton" class="button">Показать выполненные</button>
+    <button id="showUncompletedButton" class="button">Показать не выполненные</button>
+</div>
+<div class="date-filter-container">
+    <button id="showByDateButton" class="button">Показать по дате</button>
+    <input type="text" id="dateInput" class="date-input" placeholder="Введите дату (дд.мм.гггг)">
+    <label for="statusInput">Выполнено:</label>
+    <input type="checkbox" id="statusInput">
+</div>
+<div class="buttons-container">
+    <button id="findTaskButton" class="button">Найти задачу</button>
+    <input type="text" id="taskIdInput" class="date-input" placeholder="Номер задачи">
+    <button id="deleteTaskButton" class="button">Удалить задачу</button>
+    <input type="text" id="taskIdToDeleteInput" class="date-input" placeholder="Номер задачи">
+</div>
+<p id="foundTaskInfo"></p>
+<p id="deleteTaskInfo"></p>
+<br>
+<table id="taskTable">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Заголовок</th>
+        <th>Описание</th>
+        <th>Дата</th>
+        <th>Статус</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+<div id="pagination"></div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const showAllButton = document.getElementById('showAllButton');
+        const showCompletedButton = document.getElementById('showCompletedButton');
+        const showUncompletedButton = document.getElementById('showUncompletedButton');
+        const showByDateButton = document.getElementById('showByDateButton');
+        const dateInput = document.getElementById('dateInput');
+        const statusInput = document.getElementById('statusInput');
+        const taskTable = document.getElementById('taskTable').getElementsByTagName('tbody')[0];
+        const pagination = document.getElementById('pagination');
+        const findTaskButton = document.getElementById('findTaskButton');
+        const taskIdInput = document.getElementById('taskIdInput');
+        const foundTaskInfo = document.getElementById('foundTaskInfo');
+        const deleteTaskButton = document.getElementById('deleteTaskButton');
+        const taskIdToDeleteInput = document.getElementById('taskIdToDeleteInput');
+        const deleteTaskInfo = document.getElementById('deleteTaskInfo');
+
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            return new Date(dateString).toLocaleDateString(undefined, options);
+        }
+
+        function updateTaskTable(tasks) {
+            taskTable.innerHTML = '';
+            tasks.forEach(task => {
+                const row = taskTable.insertRow();
+                row.insertCell(0).textContent = task.id;
+                row.insertCell(1).textContent = task.title;
+                row.insertCell(2).textContent = task.description;
+                row.insertCell(3).textContent = formatDate(task.date);
+                row.insertCell(4).textContent = task.status ? 'Выполнено' : 'Не выполнено';
+            });
+        }
+
+        function showTasksByStatus(status) {
+            const requestData = { status };
+            fetch('http://localhost:3003/task_all_status', {
+                method: 'POST',
+                body: JSON.stringify(requestData),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    updateTaskTable(data);
+                })
+                .catch(error => {
+                    console.error('Ошибка при получении данных:', error);
+                });
+        }
+
+        function convertDateToISOFormat(dateString) {
+            const parts = dateString.split('.');
+            if (parts.length === 3) {
+                const day = parts[0];
+                const month = parts[1];
+                const year = parts[2];
+                return `${year}-${month}-${day}T10:00:00Z`;
+            }
+            return null;
+        }
+
+        function showTasksByDateAndStatus() {
+            const inputDate = dateInput.value;
+            const inputStatus = statusInput.checked;
+            const isoDate = convertDateToISOFormat(inputDate);
+
+            if (isoDate) {
+                const requestData = {
+                    date: isoDate,
+                    status: inputStatus
+                };
+                fetch('http://localhost:3003/task_all_available', {
+                    method: 'POST',
+                    body: JSON.stringify(requestData),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        updateTaskTable(data);
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при получении данных:', error);
+                    });
+            } else {
+                alert('Введите корректную дату в формате дд.мм.гггг');
+            }
+        }
+        function findTaskById() {
+            const taskId = taskIdInput.value;
+
+            if (taskId) {
+                fetch(`http://localhost:3003/task/${taskId}`)
+                    .then(response => {
+                        if (response.status === 200) {
+                            return response.json();
+                        } else if (response.status === 404) {
+                            foundTaskInfo.textContent = 'Задача не найдена';
+                        } else {
+                            foundTaskInfo.textContent = 'Произошла ошибка';
+                        }
+                    })
+                    .then(data => {
+                        if (data) {
+                            updateTaskTable([data]);
+                            foundTaskInfo.textContent = '';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при получении данных:', error);
+                    });
+            } else {
+                foundTaskInfo.textContent = 'Введите номер задачи';
+            }
+        }
+
+        function deleteTaskById() {
+            const taskIdToDelete = taskIdToDeleteInput.value;
+
+            if (taskIdToDelete) {
+                fetch(`http://localhost:3003/task/${taskIdToDelete}`, {
+                    method: 'DELETE'
+                })
+                    .then(response => {
+                        if (response.status === 200) {
+                            return response.text();
+                        } else if (response.status === 404) {
+                            deleteTaskInfo.textContent = 'Задача не найдена';
+                        } else {
+                            deleteTaskInfo.textContent = 'Произошла ошибка';
+                        }
+                    })
+                    .then(data => {
+                        if (data === 'TASK DELETED') {
+                            deleteTaskInfo.textContent = `Задача ${taskIdToDelete} была удалена`;
+                            showAllButton.click();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при удалении задачи:', error);
+                    });
+            } else {
+                deleteTaskInfo.textContent = 'Введите номер задачи для удаления';
+            }
+        }
+        showAllButton.addEventListener('click', function () {
+            fetch('http://localhost:3003/task_all')
+                .then(response => response.json())
+                .then(data => {
+                    updateTaskTable(data);
+                })
+                .catch(error => {
+                    console.error('Ошибка при получении данных:', error);
+                });
+        });
+        showCompletedButton.addEventListener('click', function () {
+            showTasksByStatus(true);
+        });
+        showUncompletedButton.addEventListener('click', function () {
+            showTasksByStatus(false);
+        });
+        showByDateButton.addEventListener('click', function () {
+            showTasksByDateAndStatus();
+        });
+        findTaskButton.addEventListener('click', function () {
+            findTaskById();
+        });
+        deleteTaskButton.addEventListener('click', function () {
+            deleteTaskById();
+        });
+    });
+</script>
+</body>
+</html>

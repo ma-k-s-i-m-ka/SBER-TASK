@@ -56,8 +56,8 @@ func (s *Server) Run(dbConn *pgx.Conn) error {
 	if err != nil {
 		s.log.Error("Failed to open documentation in the browser:", err)
 	}
-	fs := http.FileServer(http.Dir("/public"))
-	//fs := http.FileServer(http.Dir("public"))
+	//fs := http.FileServer(http.Dir("/public"))
+	fs := http.FileServer(http.Dir("public"))
 	s.handler.Handler(http.MethodGet, "/", fs)
 	s.handler.Handler(http.MethodGet, "/index.html", fs)
 	err = browser.OpenURL("http://localhost:" + s.cfg.HTTP.Port + "/")
